@@ -66,7 +66,7 @@ class ScreenshotTest {
     // Dark, like the test phone (system dark theme).
     @get:Rule
     val paparazzi = Paparazzi(
-        deviceConfig = DeviceConfig.PIXEL_5.copy(nightMode = DeviceConfig.NightMode.NIGHT),
+        deviceConfig = DeviceConfig.PIXEL_5.copy(nightMode = NightMode.NIGHT),
     )
 
     // ViewModels run on Dispatchers.Main (viewModelScope + stateIn). Swap it for
