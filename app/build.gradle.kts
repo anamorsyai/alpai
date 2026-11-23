@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    // Screenshot tests (Paparazzi) — test-only, no effect on the release build.
+    alias(libs.plugins.paparazzi)
 }
 
 android {
@@ -86,4 +88,12 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.serialization.json)
+// Screenshot tests (JVM, Paparazzi — no emulator needed).
+testImplementation(libs.paparazzi)
+// ViewModels run on Dispatchers.Main; the tests swap it for an unconfined
+// test dispatcher so stateIn flows start eagerly on the JVM.
+testImplementation(libs.kotlinx.coroutines.test)
+// SettingsRepository is a concrete DataStore-backed class with no fake seam,
+// so the settings snapshot mocks it.
+testImplementation(libs.mockito.kotlin)
 }
