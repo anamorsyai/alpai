@@ -1,10 +1,12 @@
 name: Android CI
 
+
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+
 
 jobs:
   build:
@@ -12,25 +14,75 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: "17"
           distribution: "temurin"
 
+
       - name: Install NDK 26 and CMake 3.22.1
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;26.3.11579264" "cmake;3.22.1"
+
 
       - name: Set up Gradle 8.7
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: "8.7"
+      # Paparazzi screenshot tests run inside testDebugUnitTest in verify mode,
+      # so on the first run — when no golden images are committed yet — record
+      # them first, otherwise the build step below fails on the missing goldens.
+      # Later runs skip this step and verify against the committed goldens.
+      - name: Check for screenshot goldens
+        id: goldens
+        run: |
+          if [ -d app/src/test/snapshots/images ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Record screenshot goldens (first run only)
+        if: steps.goldens.outputs.exists == 'false'
+        run: gradle recordPaparazziDebug --stacktrace
+
 
       - name: Build debug APK and run unit tests
         run: gradle assembleDebug testDebugUnitTest --stacktrace
+
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: alpai-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+      # First run: the recorded goldens are the deliverable — commit them to
+      # app/src/test/snapshots/images/ so later runs verify against them.
+      # Runs even if the build step failed, so the goldens are never lost.
+      - name: Upload screenshot goldens (first run only)
+        if: always() && steps.goldens.outputs.exists == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: paparazzi-goldens
+          path: app/src/test/snapshots/images/
+          if-no-files-found: error
+
+      # Every run: the HTML report shows the rendered screens for review.
+      - name: Upload screenshot report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paparazzi-report
+          path: app/build/reports/paparazzi/
+          if-no-files-found: ignore
+
+      # Verify failures: the delta images showing what changed vs the goldens.
+      - name: Upload screenshot failures
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paparazzi-failures
+          path: app/build/paparazzi/failures/
+          if-no-files-found: ignore
+
