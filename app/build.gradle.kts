@@ -35,13 +35,16 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {        jvmTarget = "17"
+    kotlinOptions {
+        jvmTarget = "17"
     }
 
-    buildFeatures {        compose = true
+    buildFeatures {
+        compose = true
     }
 
-    packaging {        // The terminal's native helpers (libpty_bridge.so, libalpai_proot.so) are
+    packaging {
+        // The terminal's native helpers (libpty_bridge.so, libalpai_proot.so) are
         // executables shipped under a lib*.so name: the app execs them as real files
         // out of nativeLibraryDir, so they must be extracted at install time.
         // This has to live in the :app module (the one that builds the APK) — the
