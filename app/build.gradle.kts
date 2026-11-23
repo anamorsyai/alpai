@@ -44,6 +44,15 @@ android {
     }
 
     packaging {
+        // The terminal's native helpers (libpty_bridge.so, libalpai_proot.so) are
+        // executables shipped under a lib*.so name: the app execs them as real files
+        // out of nativeLibraryDir, so they must be extracted at install time.
+        // This has to live in the :app module (the one that builds the APK) — the
+        // same setting in :core-terminal does not affect the APK, and without it
+        // AGP writes extractNativeLibs=false and the helpers are missing at runtime.
+        jniLibs {
+            useLegacyPackaging = true
+        }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }

@@ -64,8 +64,12 @@ class ChatViewModel(
     fun selectProvider(providerId: String, modelId: String? = null) {
         _selectedProviderId.value = providerId
         val provider = providers.value.firstOrNull { it.id == providerId }
-        _selectedModelId.value = modelId
-            ?: provider?.models?.firstOrNull()?.id
+        val models = provider?.models.orEmpty()
+        // Never pair a provider with a model it does not offer (e.g. OpenAI with
+        // the Demo provider's "demo-1"): a stale or foreign model id falls back to
+        // the new provider's first model instead of being sent to the wrong backend.
+        _selectedModelId.value = modelId?.takeIf { id -> models.any { it.id == id } }
+            ?: models.firstOrNull()?.id
             ?: _selectedModelId.value
     }
 
@@ -107,9 +111,21 @@ class ChatViewModel(
             val provider = selectedProvider.value
                 ?: providers.value.firstOrNull()
                 ?: return@launch
+            val assistantMessage = ChatMessage(chatId = chat.id, role = Role.ASSISTANT, content = "")
+            // A real (non-Demo) provider with no API key can never answer: say so
+            // plainly instead of sending a key-less request and surfacing the
+            // provider's cryptic HTTP 401. (Demo has an empty base URL and needs no key.)
+            if (provider.baseUrl.isNotBlank() && provider.apiKey.isBlank()) {
+                chatRepository.saveMessage(
+                    assistantMessage.copy(
+                        content = "No API key set for ${provider.name} — add one in " +
+                            "Providers first, then send again. (Demo needs no key.)",
+                    ),
+                )
+                return@launch
+            }
             val api = chatApiFactory.create(provider)
             val history = chatRepository.observeMessages(chat.id).first()
-            val assistantMessage = ChatMessage(chatId = chat.id, role = Role.ASSISTANT, content = "")
             _streamingMessage.value = assistantMessage
             _isGenerating.value = true
             var accumulated = ""
