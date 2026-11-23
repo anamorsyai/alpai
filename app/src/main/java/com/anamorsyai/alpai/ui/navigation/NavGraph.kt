@@ -142,7 +142,7 @@ fun AlpAiNavHost(app: AlpAiApp) {
                 ProvidersScreen(viewModel = providersViewModel)
             }
             composable(Routes.TERMINAL) {
-                TerminalScreen()
+                TerminalScreen(manager = app.terminalSessionManager)
             }
             composable(Routes.SETTINGS) {
                 SettingsScreen(viewModel = settingsViewModel)
