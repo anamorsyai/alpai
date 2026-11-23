@@ -22,8 +22,13 @@ object AlpineSession {
     private const val TAG = "AlpAI/Session"
     /** Folder name of the guest root under the app's files dir (see AlpineRootfs). */
     private const val ROOTFS_DIR_NAME = "alpine-rootfs"
+        
+    /** Host part of an apk repository URL (group 1) — e.g. dl-cdn.alpinelinux.org from
+         *  "https://dl-cdn.alpinelinux.org/alpine/v3.22/main". Used by writeApkHostsIPv4Only()
+          *  to resolve each repo host to IPv4. */
+    private val REPO_HOST_RE = Regex("""^https?://([^/\s]+)""")
 
-    /** Guards writeResolvConf()/writeApkHostsIPv4Only() below — both read-modify-write files
+/** Guards writeResolvConf()/writeApkHostsIPv4Only() below — both read-modify-write files
      *  shared by every session in the same rootfs (etc/resolv.conf, etc/hosts), and since package
      *  search moved onto its own dedicated executor (searchExecutor, separate from the
      *  backgroundExecutor every tab start runs on), those two call sites can now genuinely run
