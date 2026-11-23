@@ -14,3 +14,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "AlpAI"
 include(":app")
+include(":core-terminal")
