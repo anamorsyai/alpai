@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityOptionsCompat
 import app.cash.paparazzi.DeviceConfig
 import app.cash.paparazzi.Paparazzi
+import com.android.resources.NightMode
 import com.anamorsyai.alpai.data.model.Chat
 import com.anamorsyai.alpai.data.model.ChatMessage
 import com.anamorsyai.alpai.data.model.Role
