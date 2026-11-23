@@ -10,4 +10,3 @@ plugins {
     // Screenshot tests (Paparazzi) — test-only, no effect on the release build.
     alias(libs.plugins.paparazzi) apply false
 }
-
