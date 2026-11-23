@@ -78,4 +78,3 @@ jobs:
           name: paparazzi-failures
           path: app/build/paparazzi/failures/
           if-no-files-found: ignore
-
