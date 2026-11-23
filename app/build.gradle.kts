@@ -6,11 +6,9 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-
 android {
     namespace = "com.anamorsyai.alpai"
     compileSdk = 34
-
 
     defaultConfig {
         applicationId = "com.anamorsyai.alpai"
@@ -19,10 +17,8 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-
 
     buildTypes {
         release {
@@ -34,25 +30,18 @@ android {
         }
     }
 
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-
-    kotlinOptions {
-        jvmTarget = "17"
+    kotlinOptions {        jvmTarget = "17"
     }
 
-
-    buildFeatures {
-        compose = true
+    buildFeatures {        compose = true
     }
 
-
-    packaging {
-        // The terminal's native helpers (libpty_bridge.so, libalpai_proot.so) are
+    packaging {        // The terminal's native helpers (libpty_bridge.so, libalpai_proot.so) are
         // executables shipped under a lib*.so name: the app execs them as real files
         // out of nativeLibraryDir, so they must be extracted at install time.
         // This has to live in the :app module (the one that builds the APK) — the
@@ -66,7 +55,6 @@ android {
         }
     }
 }
-
 
 dependencies {
     implementation(libs.androidx.core.ktx)
@@ -96,4 +84,3 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.serialization.json)
 }
-
