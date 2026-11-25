@@ -56,6 +56,14 @@ class ChatViewModel(
     private val _createdChatId = MutableStateFlow<String?>(null)
     val createdChatId: StateFlow<String?> = _createdChatId.asStateFlow()
 
+    /** Last deleted chat + its messages, held briefly so the UI can offer Undo.
+     *  Only the most recent delete is kept: deleting a second chat while the
+     *  first undo is still showing replaces it. */
+    data class DeletedChat(val chat: Chat, val messages: List<ChatMessage>)
+
+    private val _deletedChat = MutableStateFlow<DeletedChat?>(null)
+    val deletedChat: StateFlow<DeletedChat?> = _deletedChat.asStateFlow()
+
     private var generationJob: Job? = null
 
     fun observeMessages(chatId: String): Flow<List<ChatMessage>> =
@@ -172,7 +180,24 @@ class ChatViewModel(
     }
 
     fun deleteChat(chatId: String) {
-        viewModelScope.launch { chatRepository.deleteChat(chatId) }
+        viewModelScope.launch {
+            val chat = chats.value.firstOrNull { it.id == chatId } ?: return@launch
+            val messages = chatRepository.observeMessages(chatId).first()
+            chatRepository.deleteChat(chatId)
+            _deletedChat.value = DeletedChat(chat, messages)
+        }
+    }
+
+    /** Restores the last deleted chat (Snackbar Undo). No-op if nothing to restore. */
+    fun restoreDeletedChat() {
+        val deleted = _deletedChat.value ?: return
+        _deletedChat.value = null
+        viewModelScope.launch { chatRepository.restoreChat(deleted.chat, deleted.messages) }
+    }
+
+    /** Clears the pending undo without restoring (e.g. the Snackbar timed out). */
+    fun consumeDeletedChat() {
+        _deletedChat.value = null
     }
 }
 
