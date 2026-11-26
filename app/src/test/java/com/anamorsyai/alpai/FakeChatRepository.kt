@@ -40,6 +40,11 @@ class FakeChatRepository(
         messagesFlow.update { it - chatId }
     }
 
+    override suspend fun restoreChat(chat: Chat, messages: List<ChatMessage>) {
+        chatsFlow.update { list -> listOf(chat) + list.filterNot { it.id == chat.id } }
+        messagesFlow.update { current -> current + (chat.id to messages) }
+    }
+
     override suspend fun clearAll() {
         chatsFlow.value = emptyList()
         messagesFlow.value = emptyMap()

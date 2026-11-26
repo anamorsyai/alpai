@@ -19,6 +19,8 @@ interface ChatRepository {
     suspend fun createChat(title: String, modelId: String?): Chat
     suspend fun saveMessage(message: ChatMessage)
     suspend fun deleteChat(chatId: String)
+    /** Re-inserts a previously deleted chat with its messages (undo). */
+    suspend fun restoreChat(chat: Chat, messages: List<ChatMessage>)
     suspend fun clearAll()
 }
 
@@ -91,6 +93,30 @@ class RoomChatRepository(
     override suspend fun deleteChat(chatId: String) {
         messageDao.deleteMessagesForChat(chatId)
         chatDao.deleteChat(chatId)
+    }
+
+    override suspend fun restoreChat(chat: Chat, messages: List<ChatMessage>) {
+        chatDao.upsert(
+            ChatEntity(
+                id = chat.id,
+                title = chat.title,
+                createdAt = chat.createdAt,
+                updatedAt = chat.updatedAt,
+                modelId = chat.modelId,
+            ),
+        )
+        messages.forEach { message ->
+            messageDao.upsert(
+                MessageEntity(
+                    id = message.id,
+                    chatId = message.chatId,
+                    role = message.role.name,
+                    content = message.content,
+                    createdAt = message.createdAt,
+                    attachmentNames = message.attachments.joinToString(",") { it.name },
+                ),
+            )
+        }
     }
 
     override suspend fun clearAll() {

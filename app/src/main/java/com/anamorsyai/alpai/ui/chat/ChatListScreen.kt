@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -21,11 +22,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,10 +55,29 @@ fun ChatListScreen(
     onOpenSettings: () -> Unit,
 ) {
     val chats by viewModel.chats.collectAsState()
+    val deletedChat by viewModel.deletedChat.collectAsState()
     var query by remember { mutableStateOf("") }
+    var chatToDelete by remember { mutableStateOf<Chat?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
     val filtered = remember(chats, query) {
         if (query.isBlank()) chats
         else chats.filter { it.title.contains(query, ignoreCase = true) }
+    }
+
+    // Undo bar: after a delete, offer Undo while the snackbar is showing.
+    // Tapping Undo restores the chat; dismissing / timing out drops it for good.
+    LaunchedEffect(deletedChat) {
+        val deleted = deletedChat ?: return@LaunchedEffect
+        val result = snackbarHostState.showSnackbar(
+            message = "Deleted \"${deleted.chat.title}\"",
+            actionLabel = "Undo",
+            duration = SnackbarDuration.Long,
+        )
+        if (result == SnackbarResult.ActionPerformed) {
+            viewModel.restoreDeletedChat()
+        } else {
+            viewModel.consumeDeletedChat()
+        }
     }
 
     Scaffold(
@@ -70,6 +96,7 @@ fun ChatListScreen(
                 Icon(Icons.Filled.Add, contentDescription = "New chat")
             }
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(
             modifier = Modifier
@@ -106,12 +133,32 @@ fun ChatListScreen(
                         ChatRow(
                             chat = chat,
                             onClick = { onOpenChat(chat.id) },
-                            onDelete = { viewModel.deleteChat(chat.id) },
+                            onDelete = { chatToDelete = chat },
                         )
                     }
                 }
             }
         }
+    }
+
+    // Confirmation before anything is deleted.
+    chatToDelete?.let { chat ->
+        AlertDialog(
+            onDismissRequest = { chatToDelete = null },
+            title = { Text("Delete chat?") },
+            text = { Text("Delete \"${chat.title}\" and all its messages? You can undo right after, from the bar at the bottom.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        chatToDelete = null
+                        viewModel.deleteChat(chat.id)
+                    },
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { chatToDelete = null }) { Text("Cancel") }
+            },
+        )
     }
 }
 
